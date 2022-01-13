@@ -507,87 +507,38 @@ TdQueueDisc::DoDequeue ()
     uint32_t count[i] = weight[i];
     while (--count[i] >=0 && (item = GetInternalQueue (i)->Dequeue ()) != 0)
     {
+      // Dequeue packet while has remaining tokens and queue is non-empty
       NS_LOG_LOGIC ("Popped from queue " << i << ": " << item);
       NS_LOG_LOGIC ("Current queue size of queue " << i << " : " << GetInternalQueue (i)->GetNPackets ());
       count[i] -= 1;
       return item;
-      if (count[i] = 0 || (item = GetInternalQueue (i)->Dequeue ()) == 0)
+      if (count[i] = 0 || (item = GetInternalQueue (i)->Dequeue ()) == 0) 
       {
-        m_tokens = weight[i] - count[i];
+        // Compute number of unused tokens
+        m_tokens = weight[i] - count[i];  // BUG: m_token is a scalar, should be vector or array
+      }
+    }
+
+    if (i == GetNInternalQueues ())
+    {
+      // Best effort queue
+      uint32_t rest_token = 10 - std::accumulate(m_tokens.begin(), m_tokens.end(), 0);
+      while (rest_token != 0)
+      {
+        rest_token --;
         return item;
+      }
+      if (rest_token == 0)
+      {
+        NS_LOG_LOGIC ("All tokens used, move to next round")
       }
     }
     
   }
 
-  if (GetInternalQueue (0)->IsEmpty ())
-    {
-      NS_LOG_LOGIC ("Queue empty");
-      return 0;
-    }
-
   Ptr<QueueDiscItem> item = GetInternalQueue (0)->Dequeue ();
   double now = Simulator::Now ().GetSeconds ();
   uint32_t pktSize = item->GetSize ();
-
-  // if not in a measurement cycle and the queue has built up to dq_threshold,
-  // start the measurement cycle
-  if (m_useDqRateEstimator)
-    {
-      if ( (GetInternalQueue (0)->GetNBytes () >= m_dqThreshold) && (!m_inMeasurement) )
-        {
-          m_dqStart = now;
-          m_dqCount = 0;
-          m_inMeasurement = true;
-        }
-
-      if (m_inMeasurement)
-        {
-          m_dqCount += pktSize;
-
-          // done with a measurement cycle
-          if (m_dqCount >= m_dqThreshold)
-            {
-
-              double tmp = now - m_dqStart;
-
-              if (tmp > 0)
-                {
-                  if (m_avgDqRate == 0)
-                    {
-                      m_avgDqRate = m_dqCount / tmp;
-                    }
-                  else
-                    {
-                      m_avgDqRate = (0.5 * m_avgDqRate) + (0.5 * (m_dqCount / tmp));
-                    }
-                }
-              NS_LOG_DEBUG ("Average Dequeue Rate after Dequeue: " << m_avgDqRate);
-
-              // restart a measurement cycle if there is enough data
-              if (GetInternalQueue (0)->GetNBytes () > m_dqThreshold)
-                {
-                  m_dqStart = now;
-                  m_dqCount = 0;
-                  m_inMeasurement = true;
-                }
-              else
-                {
-                  m_dqCount = 0;
-                  m_inMeasurement = false;
-                }
-            }
-        }
-    }
-  else
-    {
-      m_qDelay = Time (Seconds (now - item->GetTimeStamp ().GetSeconds ()));
-
-      if (GetInternalQueue (0)->GetNBytes () == 0)
-        {
-          m_qDelay = Time (Seconds (0));
-        }
-    }
   return item;
 }
 
