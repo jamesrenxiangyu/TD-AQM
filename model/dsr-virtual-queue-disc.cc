@@ -75,6 +75,9 @@ DsrVirtualQueueDisc::DoDequeue (void)
       NS_LOG_LOGIC ("Popped from band " << prio << ": " << item);
       NS_LOG_LOGIC ("Number packets band " << prio << ": " << GetInternalQueue (prio)->GetNPackets ());
       // std::cout << "++++++ Current Queue length: " << GetInternalQueue (prio)->GetNPackets () << " at band: " << item <<  std::endl;
+      /**
+       * \todo Count the number of time-out drops in each queue by compare the packet delay budget and its sojourn time
+      */
       return item;
     }
   NS_LOG_LOGIC ("Queue empty");
@@ -203,7 +206,6 @@ DsrVirtualQueueDisc::Classify ()
     }
   currentFastWeight = m_fastWeight;
   currentSlowWeight = m_slowWeight;
-  currentNormalWeight = m_normalWeight;
   
    if (currentFastWeight > 0)
     {
@@ -214,6 +216,7 @@ DsrVirtualQueueDisc::Classify ()
         }
       else
         {
+          m_remainWeight = currentFastWeight;
           currentFastWeight = 0;
         }
     }
@@ -226,9 +229,11 @@ DsrVirtualQueueDisc::Classify ()
         }
       else
         {
+          m_remainWeight += currentSlowWeight;
           currentSlowWeight = 0;
         }
     }
+  currentNormalWeight = m_remainWeight;
   if (currentNormalWeight > 0)
     {
       if (!GetInternalQueue (2)->IsEmpty ())
@@ -239,8 +244,15 @@ DsrVirtualQueueDisc::Classify ()
       else
         {
           currentNormalWeight = 0;
+          m_remainWeight = 0;
         }
     }
+  
+  /**
+   * \todo Write TD-AQM algorithm here
+  */
+
+
   return 88;
 }   
 
@@ -268,36 +280,57 @@ DsrVirtualQueueDisc::EnqueueClassify (Ptr<QueueDiscItem> item)
   }
 }
 
-
-uint32_t DsrVirtualQueueDisc::QueueLengthUpdate (uint32_t m_queueLength, uint32_t m_estQlOld, uint32_t m_estQlNew, uint32_t m_usedTokens);
+/**
+ * \brief Update queue length estimation by TD
+ * \param m_queueLength Real queue length of previous time period
+ * \param m_estQlOld Estimated queue length of the previous time period
+ * \param m_estQlNew Estimated queue length of the current time period
+ * \return Updated m_estQlNew
+*/
+uint32_t DsrVirtualQueueDisc::QueueLengthUpdate (uint32_t m_queueLength, uint32_t m_estQlOld, uint32_t m_estQlNew);
 {
   double eta = 0.5; // adjusting param
-  double tempQl[3] = {0.0, 0.0, 0.0};
-  tempQl = m_estQlNew + eta * (m_queueLength - m_estQlOld);
-  m_estQlNew = (int) tempQl;
+  double tempQl;
+  for (int i=0; i<3; i++)
+  {
+    tempQl = m_estQlNew[i] + eta * (m_queueLength[i] - m_estQlOld[i]);
+    m_estQlNew[i] = (uint32_t) tempQl;
+  }
+  m_estQlOld = m_estQlNew;
   return m_estQlNew;
 }
 
-
-uint32_t DsrVirtualQueueDisc::DropProbUpdate ( double m_estDropOld, uint32_t m_OptDrop, uint32_t estQl, uint32_t m_TODrop, uint32_t m_arrivals);
+/**
+ * \brief Update drop probability estimation
+ * \param m_OptDrop Optimal drop probability of previous time period
+ * \param m_estDropOld Estimated drop probability of the previous time period
+ * \param m_estDropNew Estimated drop probability of the current time period
+*/
+uint32_t DsrVirtualQueueDisc::DropProbUpdate ( double m_estDropNew, uint32_t m_OptDrop, uint32_t m_estDropOld, 
+                                              uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals);
 {
   double eta = 0.5;
-  double tempDp[3] = {0.0, 0.0, 0.0};
-  double m_estDropNew = DropProbEstimate (uint32_t estQl, uint32_t m_TODrop, uint32_t m_arrivals);
-  tempDp = m_estDropNew + eta * (m_optDrop - m_estDropOld);
-  m_estDropNew = tempDp;
+  double tempDp;
+  for (int i=0; i<3; i++)
+  {
+    tempDp  = DropProbEstimate (uint32_t m_estQlNew[i], uint32_t m_TODrop[i], uint32_t m_arrivals[i]);
+    m_estDropNew[i] = tempDp + eta * (m_optDrop[i] - m_estDropOld[i]);
+  }
+  m_estOld = m_estQlNew;
   return m_estDropNew;
 }
 
 
+
+/**
+ * \brief Find optimal drop probability for each queue by solving the optimization problem
+ * \return Drop proability estimation
+*/
 double DropProbEstimate (uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals, uint32_t m_delayRef, uint32_t m_queueLength, uint32_t m_gamma);
 {
-  /**
-   * TD-AQM algorithm
-  */
   double alp = 0.5;
   double beta = 0.5;
-  uint32_t linkRate[3] = {1, 2, 3};
+  uint32_t linkRate; // Get link rate from p2pLink 
   double a1 = 1 / (m_delayRef * linkRate);
   double a2 = std::max(m_queueLength - m_TODrop - m_usedTokens, 0);
   double a3 = m_arrivals;
@@ -313,20 +346,27 @@ double DropProbEstimate (uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arri
   double b = alp * A0 * beta + alp * B0 * A1;
 
   m_estDropNew = 0.5 * W * b;
-    
 
-
-
-  
   
   return  m_estDropNew;
 }
 
-
+/**
+ * \brief Estimate queue length of the next time period
+ * \param m_toDrop number of time-out drops in the previous time period
+ * \param m_usedTokens number of used tokens in the previous time period
+ * \param m_arrivals number of arrived packets in the previous time period
+ * \param m_queuelength queue length of current time period
+*/
 uint32_t QueueEstimate (uint32_t m_toDrop, uint32_t m_usedTokens, uint32_t m_arrivals, uint32_t m_queueLength);
 {
-  uint32_t m_estQl = std::max (m_queueLength - m_usedTokens - m_toDrop, 0) + m_arrivals;
-  return m_estQl;
+  uint32_t tempQl;
+  for (int i=0; i<3; i++)
+  {
+    tempQl = std::max (m_queueLength[i] - m_usedTokens[i] - m_toDrop[i], 0) + m_arrivals[i];
+    m_estQlNew[i] = tempQl;
+  }
+  return m_estQlNew;
 }
 
 

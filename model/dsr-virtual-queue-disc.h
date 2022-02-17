@@ -30,16 +30,17 @@ public:
 private:
   // packet size = 1kB
   // packet size for test = 52B
-  uint32_t LinesSize[3] = {12,36,100};
-  uint32_t m_delayRef [3] = {1, 2, 100};
-  uint32_t m_fastWeight = 10;
-  uint32_t m_slowWeight = 3;
-  uint32_t m_normalWeight = 2;
-  uint32_t m_arrivals[3] = {0, 0, 0};
+  uint32_t LinesSize[3] = {12,36,100}; // Buffer size
+  uint32_t m_delayRef [3] = {1, 2, 100}; // Delay upper bound
+  uint32_t m_fastWeight = 10; 
+  uint32_t m_slowWeight = 5;
+  uint32_t m_normalWeight = 0;
+  uint32_t m_remainWeight = 0;
+  uint32_t m_arrivals[3] = {0, 0, 0}; // arrival of Period
   // uint32_t m_farr = 0; // number of arriving packets at 1st queue
   // uint32_t m_sarr = 0; // number of arriving packets at 2nd queue
   // uint32_t m_narr = 0; // number of arriving packets at best-effort queue
-  uint32_t m_queueLength[3] = {0, 0, 0};
+  uint32_t m_queueLength[3] = {0, 0, 0}; // Real Queue length
   // uint32_t m_fql = 0; // 1st priority queue, queue length in packets
   // uint32_t m_sql = 0; // 2nd 
   // uint32_t m_nql = 0; // best effort queue
