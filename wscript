@@ -7,7 +7,7 @@
 #     conf.check_nonfatal(header_name='stdint.h', define_name='HAVE_STDINT_H')
 
 def build(bld):
-    module = bld.create_ns3_module('dsr-routing', ['core'])
+    module = bld.create_ns3_module('TD-AQM', ['core'])
     module.source = [
         'model/ipv4-dsr-routing-table-entry.cc',
         'model/dsr-header.cc',
@@ -24,7 +24,7 @@ def build(bld):
         'helper/dsr-sink-helper.cc',
         ]
 
-    module_test = bld.create_ns3_module_test_library('dsr-routing')
+    module_test = bld.create_ns3_module_test_library('TD-AQM')
     module_test.source = [
         # 'test/dsr-routing-test-suite.cc',
         # 'test/test-dsr-header.cc',
@@ -36,7 +36,7 @@ def build(bld):
              ])
 
     headers = bld(features='ns3header')
-    headers.module = 'dsr-routing'
+    headers.module = 'TD-AQM'
     headers.source = [
         'model/ipv4-dsr-routing-table-entry.h',
         'model/dsr-header.h',

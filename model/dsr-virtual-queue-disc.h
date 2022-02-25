@@ -50,7 +50,7 @@ private:
   uint32_t m_estQlOld[3] = {0, 0, 0}; // in packets
   uint32_t m_estQlNew[3] = {0, 0, 0}; // in packets
   uint32_t m_toDrop[3] = {0, 0, 0}; // in packets
-  uint32_t m_usedTokens[3] = {0, 0, 0};
+  uint32_t m_usedTokens[3] = {0, 0, 0}; // tokens used
   double m_gamma[3] = {0.8, 0.4, 0.1};
   
 
@@ -65,11 +65,14 @@ private:
   virtual void InitializeParams (void);
   virtual uint32_t Classify (); 
   virtual uint32_t EnqueueClassify (Ptr<QueueDiscItem> item);
-  virtual uint32_t QueueLengthUpdate (uint32_t m_queueLength, uint32_t m_estQlOld, uint32_t m_estQlNew, uint32_t m_usedTokens);
-  virtual uint32_t DropProbUpdate (uint32_t m_estDrop, uint32_t m_OptDrop);
-  virtual double DropProbEstimate (uint32_t estQlNew, uint32_t m_TODrop, uint32_t m_arrivals);
-  virtual uint32_t QueueEstimate (uint32_t m_TODrop, uint32_t m_usedTokens, uint32_t m_arrivals, uint32_t m_queueLength);
-  
+  // virtual uint32_t QueueLengthUpdate (uint32_t m_queueLength, uint32_t m_estQlOld, uint32_t m_estQlNew);
+  // virtual uint32_t DropProbUpdate (double m_estDropNew, uint32_t m_OptDrop, uint32_t m_estDropOld, uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals);
+  // virtual double DropProbEstimate (uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals, uint32_t m_delayRef, uint32_t m_queueLength, uint32_t m_gamma);
+  // virtual uint32_t QueueEstimate (uint32_t m_toDrop, uint32_t m_usedTokens, uint32_t m_arrivals, uint32_t m_queueLength);
+  virtual uint32_t QueueLengthUpdate (void);
+  virtual uint32_t DropProbUpdate (void);
+  virtual double DropProbEstimate (void);
+  virtual uint32_t QueueEstimate (void);
 };
 
 }

@@ -287,7 +287,9 @@ DsrVirtualQueueDisc::EnqueueClassify (Ptr<QueueDiscItem> item)
  * \param m_estQlNew Estimated queue length of the current time period
  * \return Updated m_estQlNew
 */
-uint32_t DsrVirtualQueueDisc::QueueLengthUpdate (uint32_t m_queueLength, uint32_t m_estQlOld, uint32_t m_estQlNew);
+uint32_t 
+// DsrVirtualQueueDisc::QueueLengthUpdate (uint32_t m_queueLength, uint32_t m_estQlOld, uint32_t m_estQlNew)
+DsrVirtualQueueDisc::QueueLengthUpdate (void)
 {
   double eta = 0.5; // adjusting param
   double tempQl;
@@ -306,17 +308,19 @@ uint32_t DsrVirtualQueueDisc::QueueLengthUpdate (uint32_t m_queueLength, uint32_
  * \param m_estDropOld Estimated drop probability of the previous time period
  * \param m_estDropNew Estimated drop probability of the current time period
 */
-uint32_t DsrVirtualQueueDisc::DropProbUpdate ( double m_estDropNew, uint32_t m_OptDrop, uint32_t m_estDropOld, 
-                                              uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals);
+uint32_t 
+// DsrVirtualQueueDisc::DropProbUpdate (double m_estDropNew, uint32_t m_OptDrop, uint32_t m_estDropOld, uint32_t m_delayRef, uint32_t m_queueLength, uint32_t m_gamma
+//                                               uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals)
+DsrVirtualQueueDisc::DropProbUpdate (void)
 {
   double eta = 0.5;
   double tempDp;
+  tempDp = DropProbEstimate (void);
   for (int i=0; i<3; i++)
   {
-    tempDp  = DropProbEstimate (uint32_t m_estQlNew[i], uint32_t m_TODrop[i], uint32_t m_arrivals[i]);
-    m_estDropNew[i] = tempDp + eta * (m_optDrop[i] - m_estDropOld[i]);
+    m_estDropNew[i] = tempDp[i] + eta * (m_optDrop[i] - m_estDropOld[i]);
   }
-  m_estOld = m_estQlNew;
+  m_estQlOld = m_estQlNew;
   return m_estDropNew;
 }
 
@@ -326,7 +330,9 @@ uint32_t DsrVirtualQueueDisc::DropProbUpdate ( double m_estDropNew, uint32_t m_O
  * \brief Find optimal drop probability for each queue by solving the optimization problem
  * \return Drop proability estimation
 */
-double DropProbEstimate (uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals, uint32_t m_delayRef, uint32_t m_queueLength, uint32_t m_gamma);
+double 
+// DsrVirtualQueueDisc::DropProbEstimate (uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals, uint32_t m_delayRef, uint32_t m_queueLength, uint32_t m_gamma)
+DsrVirtualQueueDisc::DropProbEstimate (void)
 {
   double alp = 0.5;
   double beta = 0.5;
@@ -358,7 +364,9 @@ double DropProbEstimate (uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arri
  * \param m_arrivals number of arrived packets in the previous time period
  * \param m_queuelength queue length of current time period
 */
-uint32_t QueueEstimate (uint32_t m_toDrop, uint32_t m_usedTokens, uint32_t m_arrivals, uint32_t m_queueLength);
+uint32_t 
+// DsrVirtualQueueDisc::QueueEstimate (uint32_t m_toDrop, uint32_t m_usedTokens, uint32_t m_arrivals, uint32_t m_queueLength)
+DsrVirtualQueueDisc::QueueEstimate (void)
 {
   uint32_t tempQl;
   for (int i=0; i<3; i++)
