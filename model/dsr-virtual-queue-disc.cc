@@ -308,7 +308,7 @@ DsrVirtualQueueDisc::QueueLengthUpdate (void)
  * \param m_estDropOld Estimated drop probability of the previous time period
  * \param m_estDropNew Estimated drop probability of the current time period
 */
-uint32_t 
+double 
 // DsrVirtualQueueDisc::DropProbUpdate (double m_estDropNew, uint32_t m_OptDrop, uint32_t m_estDropOld, uint32_t m_delayRef, uint32_t m_queueLength, uint32_t m_gamma
 //                                               uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals)
 DsrVirtualQueueDisc::DropProbUpdate (void)
@@ -336,25 +336,31 @@ DsrVirtualQueueDisc::DropProbEstimate (void)
 {
   double alp = 0.5;
   double beta = 0.5;
-  uint32_t linkRate; // Get link rate from p2pLink 
-  double a1 = 1 / (m_delayRef * linkRate);
-  double a2 = std::max(m_queueLength - m_TODrop - m_usedTokens, 0);
-  double a3 = m_arrivals;
-  double b1 = m_TODrop/a3;
-  double A0 = 1 - a1 * a2;
-  double A1 = a1 * a3;
-  double B0 = beta * b1;
+  uint32_t linkRate; // Get link rate from p2pLink
+  double W[3]={0,0,0}; // W matrix
+  double b[3]={0,0,0}; //b matrix
 
-  double dropProb;
-  double w = m_gamma.asDiagonal () * (alp * A1 * beta);
-  double w = 1/W; // Inverse of the matrix
-  double W = w.asDiagonal ();
-  double b = alp * A0 * beta + alp * B0 * A1;
+  for (int i=0; i<3; i++)
+  {
+    double a1 = 1 / (m_delayRef[i] * linkRate[i]);
+    double a2 = std::max(m_queueLength[i] - m_toDrop[i] - m_usedTokens[i], 0);
+    double a3 = m_arrivals[i];
+    double b1 = m_toDrop[i]/a3;
+    double A0 = 1 - a1 * a2;
+    double A1 = a1 * a3;
+    double B0 = beta * b1;
 
-  m_estDropNew = 0.5 * W * b;
-
+    W[i] = -alp * A1 * beta * m_gamma[i];
+    b[i] = (alp * A0 * beta + alp * A1 * B0) * m_gamma[i];
+  }
   
-  return  m_estDropNew;
+  double x_drop = computMatrix (W, b); // Solve opt problem 
+  for (int i=0; i<3; i++)
+  {
+    m_estDropNew[i] = 1 - x_drop[i];
+  }
+
+  return m_estDropNew;
 }
 
 /**

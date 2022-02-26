@@ -70,7 +70,7 @@ private:
   // virtual double DropProbEstimate (uint32_t m_estQlNew, uint32_t m_TODrop, uint32_t m_arrivals, uint32_t m_delayRef, uint32_t m_queueLength, uint32_t m_gamma);
   // virtual uint32_t QueueEstimate (uint32_t m_toDrop, uint32_t m_usedTokens, uint32_t m_arrivals, uint32_t m_queueLength);
   virtual uint32_t QueueLengthUpdate (void);
-  virtual uint32_t DropProbUpdate (void);
+  virtual double DropProbUpdate (void);
   virtual double DropProbEstimate (void);
   virtual uint32_t QueueEstimate (void);
 };
