@@ -22,7 +22,7 @@
 #include "ns3/string.h"
 #include "ns3/inet-socket-address.h"
 #include "ns3/names.h"
-#include "ns3/dsr-routing-module.h"
+#include "ns3/TD-AQM-module.h"
 
 namespace ns3 {
 
